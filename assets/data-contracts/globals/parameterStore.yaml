@@ -1,0 +1,180 @@
+contract:
+  id: UUID_DNS_GENERATOR  # UUID
+  apiVersion: v3.1.0
+  kind: DataContractConfig
+  version: 0.0.1
+  status: DRAFT
+  dataProduct: mimir-parameter-store
+  name: ParameterStore
+  tenant: mimir
+  domain: MimirOps
+  tags: ['mimir', 'operations', 'config-data-contract', 'globals', 'properties', 'key-value-pair']
+  description:
+    purpose: This is a collection of key value parameters to be used across the application.
+    usage: Internal use for Mimir Operations only.
+  schema:
+    - id: MimirParameterStore
+      name: mimir_parameter_store
+      logicalType: properties
+      physicalType: table
+      physicalName: mimir_parameter_store
+      description: Mimir parameters for global use across the application.
+      classification: private
+      properties:
+        - id: mimir.constants.version
+          name: version
+          businessName: version
+          description: Version of the constants values.
+          logicalType: string
+          physicalType: varchar(16)
+          primaryKey: true
+          primaryKeyPosition: 1
+          criticalDataElement: true
+          quality:
+            - id: semantic-version
+              metric: invalidValues
+              mustBe: 0
+              description: "The value must be a valid semantic version."
+              arguments:
+              pattern: '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+          customProperties:
+            - id: semantic-version-default-value
+              property: semantic-version-default-value
+              value: v0.1.0
+          examples:
+            - v0.1.0
+            - v0.1.1
+            - v1.2.1
+        - id: mimir.property.name
+          name: constant_name
+          businessName: name
+          description: Property
+          logicalType: string
+          physicalType: varchar(256)
+          primaryKey: true
+          primaryKeyPosition: 2
+          criticalDataElement: true
+          transformLogic: upper(trim(constant_name))
+          transformDescription: Enforces upper case and trims the value.
+          quality:
+            - id: sql_count_not_null
+              type: sql
+              query: |
+                SELECT COUNT(1) FROM {object} WHERE trim({property}) IS NULL
+              mustBe: 0
+          examples:
+            - MIMIR_NO_VALID_FROM_TIMESTAMP
+            - MIMIR_NO_VALID_TO_TIMESTAMP
+            - MIMIR_NULL_TIMESTAMP
+        - id: mimir.property.description
+          name: property_description
+          businessName: description
+          description: Property description.
+          logicalType: string
+          physicalType: varchar(2048)
+          criticalDataElement: true
+          transformLogic: trim(property_description)
+          transformDescription: Enforces upper case and trims the value.
+          quality:
+            - id: sql_count_not_null
+              type: sql
+              query: |
+                SELECT COUNT(1) FROM {object} WHERE trim({property}) IS NULL
+              mustBe: 0
+          examples:
+            - Defines a default value for the MIMIR_NO_VALID_FROM_TIMESTAMP property.
+            - Defines a default value for the MIMIR_NO_VALID_TO_TIMESTAMP property.
+            - Defines a default value for the MIMIR_NULL_TIMESTAMP property.
+        - id: mimir.property.data_type
+          name: dataType
+          businessName: Data Type
+          description: Data Type of the property.
+          logicalType: string
+          physicalType: varchar(16)
+          criticalDataElement: true
+          transformLogic: lower(trim(constant_name))
+          transformDescription: Enforces upper case and trims the value.
+          quality:
+            - id: line_item_unit_valid_values
+              metric: invalidValues
+              arguments:
+                validValues: [ 'string', 'integer', 'bigint', 'float', 'string-timestamp' ]
+              mustBe: 0
+              unit: rows
+          examples:
+            - json
+            - bigint
+            - string
+        - id: mimir.property.value
+          name: value
+          businessName: Value
+          description: Property value.
+          logicalType: string
+          physicalType: varchar
+          criticalDataElement: true
+          quality:
+            - id: no_nulls
+              metric: nullValues
+              mustBe: 0
+              description: "There must be no null values in the column."
+          examples:
+            - {"key": "value"}
+            - {"value": 123321123321}
+        - id: mimir.property.version.valid_from
+          name: validFrom
+          businessName: Valid From
+          description: Date and time when the property version became valid.
+          logicalType: timestamp
+          physicalType: timestamp
+          criticalDataElement: true
+          primaryKey: true
+          primaryKeyPosition: 3
+          quality:
+            - id: no_nulls
+              metric: nullValues
+              mustBe: 0
+              description: "There must be no null values in the column."
+            - id: valid_timestamp_format
+              metric: invalidValues
+              arguments:
+                validFormat: '%Y-%m-%dT%H:%M:%SZ'
+              mustBe: 0
+              description: "All timestamps must be in ISO 8601 format."
+            - id: future_valid_from
+              metric: invalidValues
+              arguments:
+                comparison: '>'
+                value: 'now'
+              mustBe: 0
+              description: "Valid from date cannot be in the future."
+          examples:
+            - 2021-01-01T00:00:00Z
+        - id: mimir.property.version.valid_to
+          name: validTo
+          businessName: Valid To
+          description: Date and time when the property version expired.
+          logicalType: timestamp
+          physicalType: timestamp
+          criticalDataElement: true
+          primaryKey: true
+          primaryKeyPosition: 4
+          quality:
+            - id: no_nulls
+              metric: nullValues
+              mustBe: 0
+              description: "There must be no null values in the column."
+            - id: valid_timestamp_format
+              metric: invalidValues
+              arguments:
+                validFormat: '%Y-%m-%dT%H:%M:%SZ'
+              mustBe: 0
+              description: "All timestamps must be in ISO 8601 format."
+            - id: future_valid_to
+              metric: invalidValues
+              arguments:
+                comparison: '>'
+                referenceColumn: validFrom
+              mustBe: 0
+              description: "validTo must be after validFrom."
+          examples:
+            - 2099-12-31T23:59:59Z
