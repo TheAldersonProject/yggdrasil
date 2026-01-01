@@ -1,0 +1,13 @@
+[project]
+name = "yggdrasil"
+version = "0.0.1"
+license = "MIT"
+license-files = ["LICENSE"]
+description = "Open Data Contract Standard Implementation on Python"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pyyaml==6.0.3",
+    "ruff>=0.14.10",
+    "structlog>=25.5.0",
+]
